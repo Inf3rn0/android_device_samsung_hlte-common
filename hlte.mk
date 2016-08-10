@@ -70,6 +70,10 @@ PRODUCT_PACKAGES += \
     libstlport \
     libxml2
 
+# Doze
+PRODUCT_PACKAGES += \
+    SamsungDoze
+
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/gps/etc/gps.conf:/system/etc/gps.conf \
     $(LOCAL_PATH)/gps/etc/flp.conf:/system/etc/flp.conf \
