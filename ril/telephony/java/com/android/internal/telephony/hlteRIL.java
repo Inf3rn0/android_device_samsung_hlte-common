@@ -54,6 +54,7 @@ import com.android.internal.telephony.uicc.IccCardStatus;
  */
 public class hlteRIL extends RIL implements CommandsInterface {
 
+    private boolean setPreferredNetworkTypeSeen = false;
     private AudioManager mAudioManager;
 
     private Object mSMSLock = new Object();
@@ -660,4 +661,18 @@ public class hlteRIL extends RIL implements CommandsInterface {
             response.sendToTarget();
         }
     }
+
+    @Override
+    public void setPreferredNetworkType(int networkType , Message response) {
+        riljLog("setPreferredNetworkType: " + networkType);
+
+        if (!setPreferredNetworkTypeSeen) {
+            riljLog("Need to reboot modem!");
+            setRadioPower(false, null);
+            setPreferredNetworkTypeSeen = true;
+        }
+
+        super.setPreferredNetworkType(networkType, response);
+    }
+
 }
