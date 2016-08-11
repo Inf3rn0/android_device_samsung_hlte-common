@@ -38,7 +38,8 @@ import android.telephony.PhoneNumberUtils;
 import com.android.internal.telephony.RILConstants;
 import com.android.internal.telephony.gsm.SmsBroadcastConfigInfo;
 import com.android.internal.telephony.cdma.CdmaInformationRecords;
-import com.android.internal.telephony.cdma.CdmaInformationRecords.CdmaSignalInfoRec;
+import 
+com.android.internal.telephony.cdma.CdmaInformationRecords.CdmaSignalInfoRec;
 import com.android.internal.telephony.cdma.SignalToneUtil;
 
 import java.io.IOException;
@@ -54,25 +55,26 @@ import com.android.internal.telephony.uicc.IccCardStatus;
  */
 public class hlteRIL extends RIL implements CommandsInterface {
 
-    private boolean setPreferredNetworkTypeSeen = false;
     private AudioManager mAudioManager;
 
     private Object mSMSLock = new Object();
     private boolean mIsSendingSMS = false;
     protected boolean isGSM = false;
 
-    private static final int RIL_REQUEST_DIAL_EMERGENCY = 10001;
     public static final long SEND_SMS_TIMEOUT_IN_MS = 30000;
 
-    public hlteRIL(Context context, int preferredNetworkType, int cdmaSubscription) {
+    public hlteRIL(Context context, int preferredNetworkType, int cdmaSubscription) 
+{
         this(context, preferredNetworkType, cdmaSubscription, null);
-        mAudioManager = (AudioManager)mContext.getSystemService(Context.AUDIO_SERVICE);
+        mAudioManager = 
+(AudioManager)mContext.getSystemService(Context.AUDIO_SERVICE);
     }
 
     public hlteRIL(Context context, int preferredNetworkType,
             int cdmaSubscription, Integer instanceId) {
         super(context, preferredNetworkType, cdmaSubscription, instanceId);
-        mAudioManager = (AudioManager)mContext.getSystemService(Context.AUDIO_SERVICE);
+        mAudioManager = 
+(AudioManager)mContext.getSystemService(Context.AUDIO_SERVICE);
     }
 
     @Override
@@ -102,7 +104,8 @@ public class hlteRIL extends RIL implements CommandsInterface {
             }
             appStatus.app_type       = appStatus.AppTypeFromRILInt(p.readInt());
             appStatus.app_state      = appStatus.AppStateFromRILInt(p.readInt());
-            appStatus.perso_substate = appStatus.PersoSubstateFromRILInt(p.readInt());
+            appStatus.perso_substate = 
+appStatus.PersoSubstateFromRILInt(p.readInt());
             appStatus.aid            = p.readString();
             appStatus.app_label      = p.readString();
             appStatus.pin1_replaced  = p.readInt();
@@ -115,14 +118,18 @@ public class hlteRIL extends RIL implements CommandsInterface {
             p.readInt(); // - perso_unblock_retries
             cardStatus.mApplications[i] = appStatus;
         }
-        if (numApplications==1 && !isGSM && appStatus.app_type == appStatus.AppTypeFromRILInt(2)) {
-            cardStatus.mApplications = new IccCardApplicationStatus[numApplications+2];
+        if (numApplications==1 && !isGSM && appStatus.app_type == 
+appStatus.AppTypeFromRILInt(2)) {
+            cardStatus.mApplications = new 
+IccCardApplicationStatus[numApplications+2];
             cardStatus.mGsmUmtsSubscriptionAppIndex = 0;
-            cardStatus.mApplications[cardStatus.mGsmUmtsSubscriptionAppIndex]=appStatus;
+            
+cardStatus.mApplications[cardStatus.mGsmUmtsSubscriptionAppIndex]=appStatus;
             cardStatus.mCdmaSubscriptionAppIndex = 1;
             cardStatus.mImsSubscriptionAppIndex = 2;
             IccCardApplicationStatus appStatus2 = new IccCardApplicationStatus();
-            appStatus2.app_type       = appStatus2.AppTypeFromRILInt(4); // csim state
+            appStatus2.app_type       = appStatus2.AppTypeFromRILInt(4); // csim 
+state
             appStatus2.app_state      = appStatus.app_state;
             appStatus2.perso_substate = appStatus.perso_substate;
             appStatus2.aid            = appStatus.aid;
@@ -130,9 +137,11 @@ public class hlteRIL extends RIL implements CommandsInterface {
             appStatus2.pin1_replaced  = appStatus.pin1_replaced;
             appStatus2.pin1           = appStatus.pin1;
             appStatus2.pin2           = appStatus.pin2;
-            cardStatus.mApplications[cardStatus.mCdmaSubscriptionAppIndex] = appStatus2;
+            cardStatus.mApplications[cardStatus.mCdmaSubscriptionAppIndex] = 
+appStatus2;
             IccCardApplicationStatus appStatus3 = new IccCardApplicationStatus();
-            appStatus3.app_type       = appStatus3.AppTypeFromRILInt(5); // ims state
+            appStatus3.app_type       = appStatus3.AppTypeFromRILInt(5); // ims 
+state
             appStatus3.app_state      = appStatus.app_state;
             appStatus3.perso_substate = appStatus.perso_substate;
             appStatus3.aid            = appStatus.aid;
@@ -140,7 +149,8 @@ public class hlteRIL extends RIL implements CommandsInterface {
             appStatus3.pin1_replaced  = appStatus.pin1_replaced;
             appStatus3.pin1           = appStatus.pin1;
             appStatus3.pin2           = appStatus.pin2;
-            cardStatus.mApplications[cardStatus.mImsSubscriptionAppIndex] = appStatus3;
+            cardStatus.mApplications[cardStatus.mImsSubscriptionAppIndex] = 
+appStatus3;
         }
         return cardStatus;
     }
@@ -160,14 +170,18 @@ public class hlteRIL extends RIL implements CommandsInterface {
     }
 
     private void smsLock(){
-        // Do not send a new SMS until the response for the previous SMS has been received
-        //   * for the error case where the response never comes back, time out after
+        // Do not send a new SMS until the response for the previous SMS has been 
+received
+        //   * for the error case where the response never comes back, time out 
+after
         //     30 seconds and just try the next SEND_SMS
         synchronized (mSMSLock) {
-            long timeoutTime  = SystemClock.elapsedRealtime() + SEND_SMS_TIMEOUT_IN_MS;
+            long timeoutTime  = SystemClock.elapsedRealtime() + 
+SEND_SMS_TIMEOUT_IN_MS;
             long waitTimeLeft = SEND_SMS_TIMEOUT_IN_MS;
             while (mIsSendingSMS && (waitTimeLeft > 0)) {
-                Rlog.d(RILJ_LOG_TAG, "sendSMS() waiting for response of previous SEND_SMS");
+                Rlog.d(RILJ_LOG_TAG, "sendSMS() waiting for response of previous 
+SEND_SMS");
                 try {
                     mSMSLock.wait(waitTimeLeft);
                 } catch (InterruptedException ex) {
@@ -176,7 +190,8 @@ public class hlteRIL extends RIL implements CommandsInterface {
                 waitTimeLeft = timeoutTime - SystemClock.elapsedRealtime();
             }
             if (waitTimeLeft <= 0) {
-                Rlog.e(RILJ_LOG_TAG, "sendSms() timed out waiting for response of previous CDMA_SEND_SMS");
+                Rlog.e(RILJ_LOG_TAG, "sendSms() timed out waiting for response of 
+previous CDMA_SEND_SMS");
             }
             mIsSendingSMS = true;
         }
@@ -200,7 +215,9 @@ public class hlteRIL extends RIL implements CommandsInterface {
         response[4] %= 256;
         response[7] &= 0xff;
 
-        return new SignalStrength(response[0], response[1], response[2], response[3], response[4], response[5], response[6], response[7], response[8], response[9], response[10], response[11], true);
+        return new SignalStrength(response[0], response[1], response[2], 
+response[3], response[4], response[5], response[6], response[7], response[8], 
+response[9], response[10], response[11], true);
 
     }
 
@@ -210,6 +227,7 @@ public class hlteRIL extends RIL implements CommandsInterface {
         isGSM = (phoneType != RILConstants.CDMA_PHONE);
     }
 
+    @Override
     protected Object
     responseCallList(Parcel p) {
         int num;
@@ -222,7 +240,8 @@ public class hlteRIL extends RIL implements CommandsInterface {
 
         if (RILJ_LOGV) {
             riljLog("responseCallList: num=" + num +
-                    " mEmergencyCallbackModeRegistrant=" + mEmergencyCallbackModeRegistrant +
+                    " mEmergencyCallbackModeRegistrant=" + 
+mEmergencyCallbackModeRegistrant +
                     " mTestingEmergencyCall=" + mTestingEmergencyCall.get());
         }
         for (int i = 0 ; i < num ; i++) {
@@ -235,13 +254,11 @@ public class hlteRIL extends RIL implements CommandsInterface {
             dc.isMT = (0 != p.readInt());
             dc.als = p.readInt();
             voiceSettings = p.readInt();
-            dc.isVoice = (0 == voiceSettings) ? false : true;
+            dc.isVoice = (0 != voiceSettings);
+            int call_type = p.readInt();            // Samsung CallDetails
+            int call_domain = p.readInt();          // Samsung CallDetails
+            String csv = p.readString();            // Samsung CallDetails
             dc.isVoicePrivacy = (0 != p.readInt());
-            if (isGSM) {
-                p.readInt();
-                p.readInt();
-                p.readString();
-            }
             dc.number = p.readString();
             int np = p.readInt();
             dc.numberPresentation = DriverCall.presentationFromCLIP(np);
@@ -301,15 +318,13 @@ public class hlteRIL extends RIL implements CommandsInterface {
 
         switch(response) {
             case RIL_UNSOL_RIL_CONNECTED:
-                if (!setPreferredNetworkTypeSeen) {
-                    ret = responseInts(p);
-                    setRadioPower(false, null);
-                    setPreferredNetworkType(mPreferredNetworkType, null);
-                    setCdmaSubscriptionSource(mCdmaSubscription, null);
-                    if(mRilVersion >= 8)
-                        setCellInfoListRate(Integer.MAX_VALUE, null);
-                    notifyRegistrantsRilConnectionChanged(((int[])ret)[0]);
-                }
+                ret = responseInts(p);
+                setRadioPower(false, null);
+                setPreferredNetworkType(mPreferredNetworkType, null);
+                setCdmaSubscriptionSource(mCdmaSubscription, null);
+                if(mRilVersion >= 8)
+                    setCellInfoListRate(Integer.MAX_VALUE, null);
+                notifyRegistrantsRilConnectionChanged(((int[])ret)[0]);
                 break;
             // SAMSUNG STATES
             case 11010: // RIL_UNSOL_AM:
@@ -321,7 +336,8 @@ public class hlteRIL extends RIL implements CommandsInterface {
                     Runtime.getRuntime().exec("am " + amString);
                 } catch (IOException e) {
                     e.printStackTrace();
-                    Rlog.e(RILJ_LOG_TAG, "am " + amString + " could not be executed.");
+                    Rlog.e(RILJ_LOG_TAG, "am " + amString + " could not be 
+executed.");
                 }
                 break;
             case 11021: // RIL_UNSOL_RESPONSE_HANDOVER:
@@ -357,7 +373,8 @@ public class hlteRIL extends RIL implements CommandsInterface {
         rr.mParcel.writeInt(1);
         rr.mParcel.writeInt(0);
 
-        if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest));
+        if (RILJ_LOGD) riljLog(rr.serialString() + "> " + 
+requestToString(rr.mRequest));
 
         send(rr);
     }
@@ -407,15 +424,19 @@ public class hlteRIL extends RIL implements CommandsInterface {
         Object ret = null;
         if (error == 0 || p.dataAvail() > 0) {
             switch (rr.mRequest) {
-                case RIL_REQUEST_VOICE_REGISTRATION_STATE: ret = responseVoiceDataRegistrationState(p, false); break;
-                case RIL_REQUEST_DATA_REGISTRATION_STATE: ret = responseVoiceDataRegistrationState(p, true); break;
+                case RIL_REQUEST_VOICE_REGISTRATION_STATE: ret = 
+responseVoiceDataRegistrationState(p, false); break;
+                case RIL_REQUEST_DATA_REGISTRATION_STATE: ret = 
+responseVoiceDataRegistrationState(p, true); break;
                 case RIL_REQUEST_OPERATOR: ret =  operatorCheck(p); break;
                 default:
-                    throw new RuntimeException("Unrecognized solicited response: " + rr.mRequest);
+                    throw new RuntimeException("Unrecognized solicited response: " 
++ rr.mRequest);
             }
             //break;
         }
-        if (RILJ_LOGD) riljLog(rr.serialString() + "< " + requestToString(rr.mRequest)
+        if (RILJ_LOGD) riljLog(rr.serialString() + "< " + 
+requestToString(rr.mRequest)
                                + " " + retToString(rr.mRequest, ret));
         if (rr.mResult != null) {
             AsyncResult.forMessage(rr.mResult, ret, null);
@@ -455,7 +476,8 @@ public class hlteRIL extends RIL implements CommandsInterface {
                     try {
                         Integer.parseInt(response[i]);
                     } catch(NumberFormatException e) {
-                        response[i]=Integer.toString(Integer.parseInt(response[i],16));
+                        
+response[i]=Integer.toString(Integer.parseInt(response[i],16));
                     }
                 }
             }
@@ -471,10 +493,12 @@ public class hlteRIL extends RIL implements CommandsInterface {
      */
     private void setWbAmr(int state) {
         if (state == 1) {
-            Rlog.d(RILJ_LOG_TAG, "setWbAmr(): setting audio parameter - wb_amr=on");
+            Rlog.d(RILJ_LOG_TAG, "setWbAmr(): setting audio parameter - 
+wb_amr=on");
             mAudioManager.setParameters("wide_voice_enable=true");
         }else if (state == 0) {
-            Rlog.d(RILJ_LOG_TAG, "setWbAmr(): setting audio parameter - wb_amr=off");
+            Rlog.d(RILJ_LOG_TAG, "setWbAmr(): setting audio parameter - 
+wb_amr=off");
             mAudioManager.setParameters("wide_voice_enable=false");
         }
     }
@@ -526,7 +550,8 @@ public class hlteRIL extends RIL implements CommandsInterface {
                     && sir.alertPitch == SignalToneUtil.IS95_CONST_IR_ALERT_MED
                     && sir.signal == SignalToneUtil.IS95_CONST_IR_SIG_IS54B_L) {
 
-                Rlog.d(RILJ_LOG_TAG, "Dropping \"" + responseToString(response) + " "
+                Rlog.d(RILJ_LOG_TAG, "Dropping \"" + responseToString(response) + " 
+"
                         + retToString(response, sir)
                         + "\" to prevent \"ring of death\" bug.");
                 return;
@@ -551,17 +576,13 @@ public class hlteRIL extends RIL implements CommandsInterface {
     @Override
     public void
     dial(String address, int clirMode, UUSInfo uusInfo, Message result) {
-        if (PhoneNumberUtils.isEmergencyNumber(address)) {
-            dialEmergencyCall(address, clirMode, result);
-            return;
-        }
         RILRequest rr = RILRequest.obtain(RIL_REQUEST_DIAL, result);
 
         rr.mParcel.writeString(address);
         rr.mParcel.writeInt(clirMode);
-        rr.mParcel.writeInt(0);
-        rr.mParcel.writeInt(1);
-        rr.mParcel.writeString("");
+        rr.mParcel.writeInt(0);     // CallDetails.call_type
+        rr.mParcel.writeInt(1);     // CallDetails.call_domain
+        rr.mParcel.writeString(""); // CallDetails.getCsvFromExtras
 
         if (uusInfo == null) {
             rr.mParcel.writeInt(0); // UUS information is absent
@@ -572,7 +593,8 @@ public class hlteRIL extends RIL implements CommandsInterface {
             rr.mParcel.writeByteArray(uusInfo.getUserData());
         }
 
-        if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest));
+        if (RILJ_LOGD) riljLog(rr.serialString() + "> " + 
+requestToString(rr.mRequest));
 
         send(rr);
     }
@@ -587,8 +609,10 @@ public class hlteRIL extends RIL implements CommandsInterface {
 
         if (strings.length % mQANElements != 0) {
             throw new RuntimeException(
-                                       "RIL_REQUEST_QUERY_AVAILABLE_NETWORKS: invalid response. Got "
-                                       + strings.length + " strings, expected multiple of " + mQANElements);
+                                       "RIL_REQUEST_QUERY_AVAILABLE_NETWORKS: 
+invalid response. Got "
+                                       + strings.length + " strings, expected 
+multiple of " + mQANElements);
         }
 
         ret = new ArrayList<OperatorInfo>(strings.length / mQANElements);
@@ -623,24 +647,6 @@ public class hlteRIL extends RIL implements CommandsInterface {
         }
     }
 
-    private void
-    dialEmergencyCall(String address, int clirMode, Message result) {
-        RILRequest rr;
-        Rlog.v(RILJ_LOG_TAG, "Emergency dial: " + address);
-
-        rr = RILRequest.obtain(RIL_REQUEST_DIAL_EMERGENCY, result);
-        rr.mParcel.writeString(address + "/");
-        rr.mParcel.writeInt(clirMode);
-        rr.mParcel.writeInt(0);        // CallDetails.call_type
-        rr.mParcel.writeInt(3);        // CallDetails.call_domain
-        rr.mParcel.writeString("");    // CallDetails.getCsvFromExtra
-        rr.mParcel.writeInt(0);        // Unknown
-
-        if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest));
-
-        send(rr);
-    }
-
     // This call causes ril to crash the socket, stopping further communication
     @Override
     public void
@@ -664,17 +670,21 @@ public class hlteRIL extends RIL implements CommandsInterface {
         }
     }
 
-    @Override
-    public void setPreferredNetworkType(int networkType , Message response) {
-        riljLog("setPreferredNetworkType: " + networkType);
+    protected Object
+    responseFailCause(Parcel p) {
+        int numInts;
+        int response[];
 
-        if (!setPreferredNetworkTypeSeen) {
-            riljLog("Need to reboot modem!");
-            setRadioPower(false, null);
-            setPreferredNetworkTypeSeen = true;
+        numInts = p.readInt();
+        response = new int[numInts];
+        for (int i = 0 ; i < numInts ; i++) {
+            response[i] = p.readInt();
         }
-
-        super.setPreferredNetworkType(networkType, response);
+        LastCallFailCause failCause = new LastCallFailCause();
+        failCause.causeCode = response[0];
+        if (p.dataAvail() > 0) {
+          failCause.vendorCause = p.readString();
+        }
+        return failCause;
     }
-
 }
