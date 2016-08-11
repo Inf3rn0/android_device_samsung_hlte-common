@@ -54,14 +54,12 @@ import com.android.internal.telephony.uicc.IccCardStatus;
  */
 public class hlteRIL extends RIL implements CommandsInterface {
 
-    private boolean setPreferredNetworkTypeSeen = false;
     private AudioManager mAudioManager;
 
     private Object mSMSLock = new Object();
     private boolean mIsSendingSMS = false;
     protected boolean isGSM = false;
 
-    private static final int RIL_REQUEST_DIAL_EMERGENCY = 10001;
     public static final long SEND_SMS_TIMEOUT_IN_MS = 30000;
 
     public hlteRIL(Context context, int preferredNetworkType, int cdmaSubscription) {
@@ -210,6 +208,7 @@ public class hlteRIL extends RIL implements CommandsInterface {
         isGSM = (phoneType != RILConstants.CDMA_PHONE);
     }
 
+    @Override
     protected Object
     responseCallList(Parcel p) {
         int num;
@@ -235,13 +234,11 @@ public class hlteRIL extends RIL implements CommandsInterface {
             dc.isMT = (0 != p.readInt());
             dc.als = p.readInt();
             voiceSettings = p.readInt();
-            dc.isVoice = (0 == voiceSettings) ? false : true;
+            dc.isVoice = (0 != voiceSettings);
+            int call_type = p.readInt();            // Samsung CallDetails
+            int call_domain = p.readInt();          // Samsung CallDetails
+            String csv = p.readString();            // Samsung CallDetails
             dc.isVoicePrivacy = (0 != p.readInt());
-            if (isGSM) {
-                p.readInt();
-                p.readInt();
-                p.readString();
-            }
             dc.number = p.readString();
             int np = p.readInt();
             dc.numberPresentation = DriverCall.presentationFromCLIP(np);
@@ -301,15 +298,13 @@ public class hlteRIL extends RIL implements CommandsInterface {
 
         switch(response) {
             case RIL_UNSOL_RIL_CONNECTED:
-                if (!setPreferredNetworkTypeSeen) {
-                    ret = responseInts(p);
-                    setRadioPower(false, null);
-                    setPreferredNetworkType(mPreferredNetworkType, null);
-                    setCdmaSubscriptionSource(mCdmaSubscription, null);
-                    if(mRilVersion >= 8)
-                        setCellInfoListRate(Integer.MAX_VALUE, null);
-                    notifyRegistrantsRilConnectionChanged(((int[])ret)[0]);
-                }
+                ret = responseInts(p);
+                setRadioPower(false, null);
+                setPreferredNetworkType(mPreferredNetworkType, null);
+                setCdmaSubscriptionSource(mCdmaSubscription, null);
+                if(mRilVersion >= 8)
+                    setCellInfoListRate(Integer.MAX_VALUE, null);
+                notifyRegistrantsRilConnectionChanged(((int[])ret)[0]);
                 break;
             // SAMSUNG STATES
             case 11010: // RIL_UNSOL_AM:
@@ -551,17 +546,13 @@ public class hlteRIL extends RIL implements CommandsInterface {
     @Override
     public void
     dial(String address, int clirMode, UUSInfo uusInfo, Message result) {
-        if (PhoneNumberUtils.isEmergencyNumber(address)) {
-            dialEmergencyCall(address, clirMode, result);
-            return;
-        }
         RILRequest rr = RILRequest.obtain(RIL_REQUEST_DIAL, result);
 
         rr.mParcel.writeString(address);
         rr.mParcel.writeInt(clirMode);
-        rr.mParcel.writeInt(0);
-        rr.mParcel.writeInt(1);
-        rr.mParcel.writeString("");
+        rr.mParcel.writeInt(0);     // CallDetails.call_type
+        rr.mParcel.writeInt(1);     // CallDetails.call_domain
+        rr.mParcel.writeString(""); // CallDetails.getCsvFromExtras
 
         if (uusInfo == null) {
             rr.mParcel.writeInt(0); // UUS information is absent
@@ -623,24 +614,6 @@ public class hlteRIL extends RIL implements CommandsInterface {
         }
     }
 
-    private void
-    dialEmergencyCall(String address, int clirMode, Message result) {
-        RILRequest rr;
-        Rlog.v(RILJ_LOG_TAG, "Emergency dial: " + address);
-
-        rr = RILRequest.obtain(RIL_REQUEST_DIAL_EMERGENCY, result);
-        rr.mParcel.writeString(address + "/");
-        rr.mParcel.writeInt(clirMode);
-        rr.mParcel.writeInt(0);        // CallDetails.call_type
-        rr.mParcel.writeInt(3);        // CallDetails.call_domain
-        rr.mParcel.writeString("");    // CallDetails.getCsvFromExtra
-        rr.mParcel.writeInt(0);        // Unknown
-
-        if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest));
-
-        send(rr);
-    }
-
     // This call causes ril to crash the socket, stopping further communication
     @Override
     public void
@@ -664,17 +637,21 @@ public class hlteRIL extends RIL implements CommandsInterface {
         }
     }
 
-    @Override
-    public void setPreferredNetworkType(int networkType , Message response) {
-        riljLog("setPreferredNetworkType: " + networkType);
+    protected Object
+    responseFailCause(Parcel p) {
+        int numInts;
+        int response[];
 
-        if (!setPreferredNetworkTypeSeen) {
-            riljLog("Need to reboot modem!");
-            setRadioPower(false, null);
-            setPreferredNetworkTypeSeen = true;
+        numInts = p.readInt();
+        response = new int[numInts];
+        for (int i = 0 ; i < numInts ; i++) {
+            response[i] = p.readInt();
         }
-
-        super.setPreferredNetworkType(networkType, response);
+        LastCallFailCause failCause = new LastCallFailCause();
+        failCause.causeCode = response[0];
+        if (p.dataAvail() > 0) {
+          failCause.vendorCause = p.readString();
+        }
+        return failCause;
     }
-
 }
