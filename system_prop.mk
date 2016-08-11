@@ -20,6 +20,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
 
 # Display
 PRODUCT_PROPERTY_OVERRIDES += \
+    debug.composition.type=c2d \
     ro.hdcp2.rx=tz \
     ro.qualcomm.cabl=1 \
     ro.secwvk=144 \
